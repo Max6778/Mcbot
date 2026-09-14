@@ -1,11 +1,11 @@
 {
-  "name": "TheEpicGamer901",
+  "name": "aternos-afk-bot",
   "version": "1.0.0",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
   },
   "dependencies": {
-    "mineflayer": "^4.20.1"
+    "mineflayer": "^4.35.0"
   }
 }
