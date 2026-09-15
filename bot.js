@@ -4,7 +4,7 @@ const { Vec3 } = require('vec3')
 // ==== CONFIG (fill these in or use env vars) ====
 const HOST = process.env.MC_HOST || 'veryevilserver.aternos.me'
 const PORT = parseInt(process.env.MC_PORT || '25565')
-const USERNAME = process.env.MC_USERNAME || 'theguyaj"
+const USERNAME = process.env.MC_USERNAME || 'theguyaj'
 const VERSION = process.env.MC_VERSION || '1.21.11'
 // =================================================
 
