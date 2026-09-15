@@ -4,7 +4,7 @@ const { Vec3 } = require('vec3')
 // ==== CONFIG (fill these in or use env vars) ====
 const HOST = process.env.MC_HOST || 'veryevilserver.aternos.me'
 const PORT = parseInt(process.env.MC_PORT || '25565')
-const USERNAME = process.env.MC_USERNAME || 'theguyaj'
+const USERNAME = process.env.MC_USERNAME || 'therealaj'
 const VERSION = process.env.MC_VERSION || '1.21.11'
 // =================================================
 
@@ -19,9 +19,11 @@ function createBot() {
 
   bot.on('spawn', () => {
     console.log(`[${new Date().toISOString()}] Bot spawned, starting anti-AFK loop`)
+    const state = { fleeing: false }
     startAntiAfk(bot)
-    startRandomMovement(bot)
+    startRandomMovement(bot, state)
     startBreakPlaceLoop(bot)
+    startMobAvoidance(bot, state)
   })
 
   let banned = false
@@ -33,6 +35,11 @@ function createBot() {
       console.log('Account/server banned — stopping reconnect attempts.')
     }
   })
+  bot.on('death', () => {
+    console.log('Bot died, respawning...')
+    bot.respawn()
+  })
+
   bot.on('error', (err) => console.log('Error:', err))
 
   bot.on('end', () => {
@@ -60,12 +67,40 @@ function startAntiAfk(bot) {
   }, 20000) // every 20s
 }
 
-function startRandomMovement(bot) {
+// Returns true if there's a solid block at feet or head height one step in the given yaw direction
+function isBlocked(bot, yaw) {
+  const dx = -Math.sin(yaw)
+  const dz = -Math.cos(yaw)
+  const pos = bot.entity.position.offset(dx, 0, dz).floored()
+  const feetBlock = bot.blockAt(pos)
+  const headBlock = bot.blockAt(pos.offset(0, 1, 0))
+  const isSolid = (b) => b && b.boundingBox === 'block'
+  return isSolid(feetBlock) || isSolid(headBlock)
+}
+
+// If the given yaw is blocked, steer right if the left side is open, or vice versa.
+// Returns the yaw the bot should actually face/move toward.
+function steerAroundWalls(bot, yaw) {
+  if (!isBlocked(bot, yaw)) return yaw
+
+  const rightYaw = yaw - Math.PI / 2
+  const leftYaw = yaw + Math.PI / 2
+  const rightBlocked = isBlocked(bot, rightYaw)
+  const leftBlocked = isBlocked(bot, leftYaw)
+
+  if (!rightBlocked) return rightYaw // wall ahead/left -> go right
+  if (!leftBlocked) return leftYaw   // wall ahead/right -> go left
+  return yaw + Math.PI // boxed in, turn around
+}
+
+function startRandomMovement(bot, state) {
   const directions = ['forward', 'back', 'left', 'right']
   let current = null
 
   setInterval(() => {
     try {
+      if (state.fleeing) return // mob avoidance has priority, don't fight it
+
       // release whatever we were doing
       if (current) bot.setControlState(current, false)
 
@@ -76,6 +111,13 @@ function startRandomMovement(bot) {
       }
 
       current = directions[Math.floor(Math.random() * directions.length)]
+
+      // if moving forward and a wall's in the way, steer around it instead
+      if (current === 'forward') {
+        const desiredYaw = steerAroundWalls(bot, bot.entity.yaw)
+        bot.look(desiredYaw, 0, true)
+      }
+
       bot.setControlState(current, true)
 
       // occasional jump so it can hop over 1-block edges
@@ -117,6 +159,54 @@ function startBreakPlaceLoop(bot) {
       console.log('Break/place tick error:', e.message)
     }
   }, 15000) // every 15s
+}
+
+const HOSTILE_MOBS = [
+  'zombie', 'skeleton', 'spider', 'cave_spider', 'creeper', 'enderman',
+  'witch', 'zombie_villager', 'husk', 'stray', 'drowned', 'phantom',
+  'pillager', 'vindicator', 'evoker', 'slime', 'magma_cube', 'blaze',
+  'ghast', 'silverfish', 'guardian', 'elder_guardian', 'shulker', 'piglin_brute'
+]
+
+function startMobAvoidance(bot, state) {
+  const FLEE_RADIUS = 8
+
+  setInterval(() => {
+    try {
+      const threat = Object.values(bot.entities).find((e) => {
+        if (!e.position || e === bot.entity) return false
+        if (e.type !== 'mob' && e.type !== 'hostile') return false
+        const name = (e.name || e.mobType || '').toLowerCase()
+        if (!HOSTILE_MOBS.some((m) => name.includes(m))) return false
+        return bot.entity.position.distanceTo(e.position) <= FLEE_RADIUS
+      })
+
+      if (threat) {
+        state.fleeing = true
+        // vector pointing away from the threat
+        const away = bot.entity.position.minus(threat.position)
+        let yaw = Math.atan2(-away.x, -away.z) + Math.PI // face away
+        yaw = steerAroundWalls(bot, yaw) // don't run face-first into a wall
+        bot.look(yaw, 0, true)
+
+        bot.setControlState('forward', true)
+        bot.setControlState('sprint', true)
+
+        // jump occasionally in case of obstacles/holes while fleeing
+        if (Math.random() < 0.3) {
+          bot.setControlState('jump', true)
+          setTimeout(() => bot.setControlState('jump', false), 250)
+        }
+      } else if (state.fleeing) {
+        // threat gone, stop sprinting away and let normal wandering resume
+        state.fleeing = false
+        bot.setControlState('forward', false)
+        bot.setControlState('sprint', false)
+      }
+    } catch (e) {
+      console.log('Mob avoidance tick error:', e.message)
+    }
+  }, 1000) // check every second
 }
 
 createBot()
