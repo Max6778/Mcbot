@@ -7,17 +7,19 @@ const PORT = parseInt(process.env.MC_PORT || '25565')
 const USERNAME = process.env.MC_USERNAME || 'therealaj'
 const VERSION = process.env.MC_VERSION || '1.21.11'
 
-const ENABLE_MOVEMENT = process.env.ENABLE_MOVEMENT !== 'false'
-const ENABLE_BREAK_PLACE = process.env.ENABLE_BREAK_PLACE !== 'false'
-const ENABLE_MOB_AVOIDANCE = process.env.ENABLE_MOB_AVOIDANCE !== 'false'
+const ENABLE_MOVEMENT = process.env.ENABLE_MOVEMENT !== 'true'
+const ENABLE_BREAK_PLACE = process.env.ENABLE_BREAK_PLACE !== 'true'
+const ENABLE_MOB_AVOIDANCE = process.env.ENABLE_MOB_AVOIDANCE !== 'true'
 // ============================================
 
 function log(...args) {
   console.log(`[${new Date().toISOString()}]`, ...args)
 }
 
-let reconnectDelay = 5000 // starts at 5s, backs off up to MAX_DELAY on repeated failures
-const MAX_DELAY = 5 * 60 * 1000 // 5 min cap
+let reconnectDelay = 5000
+const MAX_DELAY = 5 * 60 * 1000
+let consecutiveFailures = 0
+const MAX_CONSECUTIVE_FAILURES = 8 // give up after this many failed attempts in a row
 
 function createBot() {
   const bot = mineflayer.createBot({
@@ -33,6 +35,7 @@ function createBot() {
   bot.on('spawn', () => {
     log('Bot spawned')
     reconnectDelay = 5000 // reset backoff after a successful connection
+    consecutiveFailures = 0
     const state = { fleeing: false, hurt: false }
 
     startAntiAfk(bot, state)
@@ -59,7 +62,12 @@ function createBot() {
 
   bot.on('end', () => {
     if (banned) return
-    log(`Disconnected, reconnecting in ${reconnectDelay / 1000}s...`)
+    consecutiveFailures++
+    if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+      log(`Gave up after ${consecutiveFailures} failed attempts in a row — server likely offline. Exiting.`)
+      process.exit(1)
+    }
+    log(`Disconnected, reconnecting in ${reconnectDelay / 1000}s... (attempt ${consecutiveFailures})`)
     setTimeout(createBot, reconnectDelay)
     reconnectDelay = Math.min(reconnectDelay * 2, MAX_DELAY)
   })
