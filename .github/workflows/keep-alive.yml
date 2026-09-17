@@ -1,9 +1,7 @@
 name: Aternos Keep Alive
 
 on:
-  workflow_dispatch: {}   # manual "Run workflow" button
-  schedule:
-    - cron: '0 */5 * * *' # tries every 5h; GitHub may delay this, don't rely on it alone
+  workflow_dispatch: {}   # manual "Run workflow" button only
 
 jobs:
   run-bot:
@@ -23,6 +21,6 @@ jobs:
         env:
           MC_HOST: ${{ secrets.MC_HOST }}
           MC_PORT: ${{ secrets.MC_PORT }}
-          MC_USERNAME: '24/7bot'
+          MC_USERNAME: 'therealaj'
           MC_VERSION: '1.21.11'
         run: timeout 20700 node bot.js || true  # 345 min, leaves buffer before job timeout
