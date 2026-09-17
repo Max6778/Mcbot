@@ -2,7 +2,7 @@ const mineflayer = require('mineflayer')
 const { Vec3 } = require('vec3')
 
 // ==== CONFIG (env vars override these) ====
-const HOST = process.env.MC_HOST || 'veryevilserver.aternos.me'
+const HOST = process.env.MC_HOST || '.aternos.me'
 const PORT = parseInt(process.env.MC_PORT || '25565')
 const USERNAME = process.env.MC_USERNAME || 'therealaj'
 const VERSION = process.env.MC_VERSION || '1.21.11'
