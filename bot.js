@@ -7,9 +7,9 @@ const PORT = parseInt(process.env.MC_PORT || '25565')
 const USERNAME = process.env.MC_USERNAME || 'therealaj'
 const VERSION = process.env.MC_VERSION || '1.21.11'
 
-const ENABLE_MOVEMENT = process.env.ENABLE_MOVEMENT !== 'true'
-const ENABLE_BREAK_PLACE = process.env.ENABLE_BREAK_PLACE !== 'true'
-const ENABLE_MOB_AVOIDANCE = process.env.ENABLE_MOB_AVOIDANCE !== 'true'
+const ENABLE_MOVEMENT = process.env.ENABLE_MOVEMENT !== 'false'
+const ENABLE_BREAK_PLACE = process.env.ENABLE_BREAK_PLACE !== 'false'
+const ENABLE_MOB_AVOIDANCE = process.env.ENABLE_MOB_AVOIDANCE !== 'false'
 // ============================================
 
 function log(...args) {
@@ -42,7 +42,6 @@ function createBot() {
     if (ENABLE_MOVEMENT) startRandomMovement(bot, state)
     if (ENABLE_BREAK_PLACE) startBreakPlaceLoop(bot, state)
     if (ENABLE_MOB_AVOIDANCE) startMobAvoidance(bot, state)
-    startHealthMonitor(bot, state)
   })
 
   bot.on('kicked', (reason) => {
