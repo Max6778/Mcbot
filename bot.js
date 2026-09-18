@@ -88,17 +88,6 @@ function startAntiAfk(bot, state) {
   }, 20000)
 }
 
-function startHealthMonitor(bot, state) {
-  bot.on('health', () => {
-    if (bot.health <= 10) {
-      if (!state.hurt) log(`Health low (${bot.health}/20) — pausing movement to recover`)
-      state.hurt = true
-    } else if (bot.health >= 18) {
-      state.hurt = false
-    }
-  })
-}
-
 const HAZARD_BLOCKS = ['lava', 'fire', 'cactus', 'magma_block', 'campfire', 'soul_campfire']
 
 // Solid collision check
