@@ -17,10 +17,21 @@ jobs:
       - name: Install deps
         run: npm install
 
-      - name: Run bot
+      - name: Run bot and self-chain before timeout
         env:
           MC_HOST: ${{ secrets.MC_HOST }}
           MC_PORT: ${{ secrets.MC_PORT }}
           MC_USERNAME: 'therealaj'
           MC_VERSION: '1.21.11'
-        run: timeout 20700 node bot.js || true  # 345 min, leaves buffer before job timeout
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          node bot.js &
+          BOT_PID=$!
+
+          # Trigger the next run ~15 min before this job's own timeout, so the new
+          # run is already starting (or already online) before this bot disconnects —
+          # keeps the gap well under Aternos's 5-min idle shutdown.
+          sleep 19800   # 330 min
+          gh workflow run "keep-alive.yml" --ref "${{ github.ref_name }}" || echo "Re-trigger failed, check PAT_TOKEN"
+
+          wait $BOT_PID || true
