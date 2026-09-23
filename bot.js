@@ -8,7 +8,7 @@ const USERNAME = process.env.MC_USERNAME || 'therealaj'
 const VERSION = process.env.MC_VERSION || '1.21.11'
 
 const ENABLE_MOVEMENT = process.env.ENABLE_MOVEMENT !== 'false'
-const ENABLE_BREAK_PLACE = process.env.ENABLE_BREAK_PLACE !== 'false'
+const ENABLE_BREAK_PLACE = process.env.ENABLE_BREAK_PLACE !== 'true'
 const ENABLE_MOB_AVOIDANCE = process.env.ENABLE_MOB_AVOIDANCE !== 'false'
 // ============================================
 
