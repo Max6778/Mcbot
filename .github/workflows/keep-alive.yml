@@ -21,7 +21,7 @@ jobs:
         env:
           MC_HOST: ${{ secrets.MC_HOST }}
           MC_PORT: ${{ secrets.MC_PORT }}
-          MC_USERNAME: 'therealaj'
+          MC_USERNAME: 'totallynotabot'
           MC_VERSION: '1.21.11'
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
